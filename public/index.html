@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Encrypt Sensitive Documents</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+  <script src="deps/openpgp.js"></script>
+</head>
+
+<body>
+  <div id="nav">
+  </div>
+  <div id="main-container">
+    <h1 style="color: black">
+      Encrypt Sensitive Documents
+    </h1>
+
+    <p class="instructions">
+      Please use this service to encrypt your sensitive documents. Only Ledn will be able to view the contents of the
+      encrypted file.
+    </p>
+
+
+    <h3>Step 1.</h3>
+    <p>Put your files into a folder and compress the folder</p>
+    <p class="small-text">To create a ZIP file from a folder:</p>
+    <p class="small-text">On Windows, right click the folder and select "Send to" › "Compressed (zipped folder)".</p>
+    <p class="small-text">On Mac, right click the folder and select "Compress [Folder Name]".</p>
+
+    <h3>Step 2.</h3>
+    <p class="instructions">
+      Choose your compressed folder by clicking "Choose File" and selecting it.
+    </p>
+    <form action="/upload" method="POST" enctype="multipart/form-data">
+      <input type="file" id="file" name="file">
+      <button>submit</button>
+    </form>
+
+    <h3>Step 3.</h3>
+    <p class="instructions">
+      Click "Download" to download the encrypted file.
+    </p>
+    <form>
+      <button type="button" onClick="return encryptAndDownload()">Download</button>
+    </form>
+
+    <h3>Step 4.</h3>
+    <p class="instructions">
+      Email the encrypted file to your contact at Ledn. Or, email it to security@ledn.io and adress it to the name of the person or the department you want to send the file to. The encrypted file will have the same name as the original, except with the <code>.gpg</code> extension at the end.
+    </p>
+
+    <br />
+
+  </div>
+</body>
+
+</html>
+
+<script>
+  downloadURL = function (data, fileName) {
+    var a;
+    a = document.createElement('a');
+    a.href = data;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.style = 'display: none';
+    a.click();
+    a.remove();
+  };
+
+  function download(file, text) {
+    console.log('download', file, text)
+    const blob = new Blob([text], {
+      type: 'application/octet-stream'
+    });
+    url = window.URL.createObjectURL(blob);
+    downloadURL(url, file);
+  }
+
+  function checkIfFileAPISupported() {
+    if (window.File && window.FileReader && window.FileList && window.Blob) {
+      console.log("File API supported.!");
+      window.FileList
+    } else {
+      console.log('The File APIs are not fully supported in this browser.');
+    }
+  }
+
+  async function encryptAndDownload() {
+    var fileInput = document.getElementById('file');
+    var filePath = fileInput.value;
+    var data = fileInput.files[0];
+    const fileName = filePath.replace(/^.*[\\\/]/, '');
+
+    const encryptedFile = await encryptFile(data);
+    download(`${fileName}.gpg`, encryptedFile);
+    document.getElementById("file").value = "";
+  }
+
+  var arrayPromise = (blob) => new Promise(function (resolve) {
+    var reader = new FileReader();
+    reader.onloadend = function () {
+      resolve(reader.result);
+    };
+    reader.readAsArrayBuffer(blob);
+  });
+
+  async function encryptFile(data) {
+
+    const publicKeysArmored = [
+      // david
+      `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+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
+=e3MR
+-----END PGP PUBLIC KEY BLOCK-----`,
+      // security
+      `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+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
+=Suoa
+-----END PGP PUBLIC KEY BLOCK-----`,
+      // it
+      `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+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
+jg==
+=wKnt
+-----END PGP PUBLIC KEY BLOCK-----`
+    ]
+
+    const arrayBufferData = await arrayPromise(data)
+
+    const publicKeys = await Promise.all(publicKeysArmored.map(armoredKey => openpgp.readKey({ armoredKey })));
+
+    const encryptedFile = await openpgp.encrypt({
+      message: await openpgp.createMessage({ binary: new Uint8Array(arrayBufferData) }),
+      encryptionKeys: publicKeys,
+      format: 'binary'
+    })
+
+    return encryptedFile;
+  };
+</script>
+
+<style>
+  body {
+    width: 100%;
+    margin: auto;
+    font-family: Poppins, sans-serif !important;
+  }
+
+  #nav {
+    padding: 30px;
+    width: 100%
+  }
+
+  #main-container {
+    padding: 1px 30px 30px 50px;
+    max-width: 600px;
+  }
+
+  .small-text {
+    font-size: 14px;
+  }
+</style>
